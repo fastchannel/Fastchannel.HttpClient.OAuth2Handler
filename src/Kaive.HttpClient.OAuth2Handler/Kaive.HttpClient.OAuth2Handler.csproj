@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;net452</TargetFrameworks>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Authors>FastChannel</Authors>
+    <Description>Provides a generic OAuth2 handler to be used within System.Net.Http.HttpClient instances, enabling OAuth2 authorization for any requests made through the aforementionet HTTP client. Inspired on: https://github.com/huysentruitw/oauth2-client-handler</Description>
+    <PackageLicenseUrl>https://raw.githubusercontent.com/fastchannel/kaive-httpclient-oauth-handler/master/LICENSE</PackageLicenseUrl>
+    <PackageProjectUrl>https://github.com/fastchannel/kaive-httpclient-oauth-handler</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/fastchannel/kaive-httpclient-oauth-handler</RepositoryUrl>
+    <PackageIconUrl>https://raw.githubusercontent.com/fastchannel/kaive-httpclient-oauth-handler/master/fastchannel.png</PackageIconUrl>
+    <RepositoryType>GitHub</RepositoryType>
+    <PackageTags>HttpClient HttpHandler OAuth2</PackageTags>
+    <PackageReleaseNotes>Initial rush release, still missing unit tests and documentation.</PackageReleaseNotes>
+  </PropertyGroup>
+  
+  <ItemGroup Condition="'$(TargetFramework)' == 'net452'">
+    <Reference Include="System.Net.Http" />
+  </ItemGroup>
+</Project>
