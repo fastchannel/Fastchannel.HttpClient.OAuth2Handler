@@ -22,11 +22,23 @@ namespace Kaive.HttpClient.OAuth2Handler
         {
             var config = options ?? throw new ArgumentNullException(nameof(options));
 
-            InnerHandler = config.InnerHandler ?? new HttpClientHandler();
-            _ownsHandler = config.InnerHandler == null;
+            if (!config.HttpClientFactoryEnabled)
+            {
+                InnerHandler = config.InnerHandler ?? new HttpClientHandler();
+                _ownsHandler = config.InnerHandler == null;
+            }
 
             _authorizer =
-                new Authorizer.Authorizer(config.AuthorizerOptions, () => new System.Net.Http.HttpClient(InnerHandler, false));
+                new Authorizer.Authorizer(config.AuthorizerOptions, () =>
+                {
+                    if (!config.HttpClientFactoryEnabled)
+                        return new System.Net.Http.HttpClient(InnerHandler, false);
+
+                    if (config.InnerHandler != null)
+                        return new System.Net.Http.HttpClient(config.InnerHandler);
+
+                    return new System.Net.Http.HttpClient();
+                });
         }
 
         protected override void Dispose(bool disposing)

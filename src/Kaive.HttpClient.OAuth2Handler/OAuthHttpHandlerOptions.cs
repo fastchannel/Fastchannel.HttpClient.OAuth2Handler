@@ -9,6 +9,8 @@ namespace Kaive.HttpClient.OAuth2Handler
 
         public HttpMessageHandler InnerHandler { get; set; }
 
+        public bool HttpClientFactoryEnabled { get; set; }
+
         // ReSharper disable once UnusedMember.Global
         public OAuthHttpHandlerOptions()
         {
