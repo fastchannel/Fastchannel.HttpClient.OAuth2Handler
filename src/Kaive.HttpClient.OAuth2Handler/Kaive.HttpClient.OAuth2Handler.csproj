@@ -14,6 +14,8 @@
     <RepositoryType>GitHub</RepositoryType>
     <PackageTags>HttpClient HttpHandler OAuth2</PackageTags>
     <PackageReleaseNotes>Initial rush release, still missing unit tests and documentation.</PackageReleaseNotes>
+    <Version>1.0.4</Version>
+    <AssemblyVersion>1.0.4.0</AssemblyVersion>
   </PropertyGroup>
   
   <ItemGroup Condition="'$(TargetFramework)' == 'net452'">
