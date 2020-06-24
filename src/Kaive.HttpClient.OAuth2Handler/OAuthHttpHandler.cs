@@ -13,6 +13,7 @@ namespace Kaive.HttpClient.OAuth2Handler
     {
         private readonly bool _ownsHandler;
         private readonly IAuthorizer _authorizer;
+        private readonly Action<HttpRequestMessage, string> _onTokenRefresh;
 
         private TokenResponse _tokenResponse;
         private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
@@ -39,6 +40,8 @@ namespace Kaive.HttpClient.OAuth2Handler
 
                     return new System.Net.Http.HttpClient();
                 });
+
+            _onTokenRefresh = config.AuthorizerOptions.OnTokenRefresh;
         }
 
         protected override void Dispose(bool disposing)
@@ -55,7 +58,7 @@ namespace Kaive.HttpClient.OAuth2Handler
             {
                 var tokenResponse = await GetTokenResponse(cancellationToken);
                 if (tokenResponse != null)
-                    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", tokenResponse.AccessToken);
+                    SetRequestHeaders(request, tokenResponse.AccessToken);
             }
 
             var response = await base.SendAsync(request, cancellationToken);
@@ -64,12 +67,18 @@ namespace Kaive.HttpClient.OAuth2Handler
                 var tokenResponse = await RefreshTokenResponse(cancellationToken);
                 if (tokenResponse != null)
                 {
-                    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", tokenResponse.AccessToken);
+                    SetRequestHeaders(request, tokenResponse.AccessToken);
                     response = await base.SendAsync(request, cancellationToken);
                 }
             }
 
             return response;
+        }
+        
+        protected virtual void SetRequestHeaders(HttpRequestMessage request, string accessToken)
+        {
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+            _onTokenRefresh?.Invoke(request, accessToken);
         }
 
         private async Task<TokenResponse> GetTokenResponse(CancellationToken cancellationToken)

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net;
+using System.Net.Http;
 
 namespace Kaive.HttpClient.OAuth2Handler.Authorizer
 {
@@ -27,6 +28,8 @@ namespace Kaive.HttpClient.OAuth2Handler.Authorizer
         public CredentialsTransportMethod CredentialsTransportMethod { get; set; }
 
         public Action<HttpStatusCode, string> OnError { get; set; }
+
+        public Action<HttpRequestMessage, string> OnTokenRefresh { get; set; }
 
         public AuthorizerOptions()
         {
