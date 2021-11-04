@@ -16,8 +16,25 @@ namespace Kaive.HttpClient.OAuth2Handler.Authorizer
         public string TokenType { get; set; }
 
         [DataMember(Name = "expires_in")]
-        public int ExpiresInSeconds { private get; set; }
+        public double ExpiresInSeconds { private get; set; }
 
+        [DataMember(Name = "scope")]
+        public string Scope { get; set; }
+
+        [DataMember(Name = "refresh_token_expires_in", EmitDefaultValue = false)]
+        public double RefreshTokenExpiresInSeconds { private get; set; }
+
+        [IgnoreDataMember]
         public TimeSpan ExpiresIn => TimeSpan.FromSeconds(ExpiresInSeconds);
+
+        [IgnoreDataMember]
+        public TimeSpan RefreshTokenExpiresIn => TimeSpan.FromSeconds(RefreshTokenExpiresInSeconds);
+
+        [IgnoreDataMember]
+        public DateTime IssueTimestamp { get; } = DateTime.UtcNow;
+
+        public bool AccessTokenIsExpiredOrAboutToExpire() => DateTime.UtcNow >= IssueTimestamp.Add(ExpiresIn);
+
+        public bool RefreshTokenIsExpiredOrAboutToExpire() => DateTime.UtcNow >= IssueTimestamp.Add(ExpiresIn);
     }
 }

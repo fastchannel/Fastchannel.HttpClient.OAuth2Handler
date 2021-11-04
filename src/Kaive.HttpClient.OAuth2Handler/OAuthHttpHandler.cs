@@ -14,6 +14,7 @@ namespace Kaive.HttpClient.OAuth2Handler
         private readonly bool _ownsHandler;
         private readonly IAuthorizer _authorizer;
         private readonly Action<HttpRequestMessage, string> _onTokenRefresh;
+        private readonly bool _ignoreRefreshTokens;
 
         private TokenResponse _tokenResponse;
         private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
@@ -42,6 +43,7 @@ namespace Kaive.HttpClient.OAuth2Handler
                 });
 
             _onTokenRefresh = config.AuthorizerOptions.OnTokenRefresh;
+            _ignoreRefreshTokens = options.IgnoreRefreshTokens;
         }
 
         protected override void Dispose(bool disposing)
@@ -101,8 +103,13 @@ namespace Kaive.HttpClient.OAuth2Handler
             try
             {
                 _semaphore.Wait(cancellationToken);
+
                 if (cancellationToken.IsCancellationRequested) return null;
-                _tokenResponse = await _authorizer.GetTokenAsync(cancellationToken);
+                if (_ignoreRefreshTokens || string.IsNullOrWhiteSpace(_tokenResponse.RefreshToken) || _tokenResponse.RefreshTokenIsExpiredOrAboutToExpire())
+                    _tokenResponse = await _authorizer.GetTokenAsync(cancellationToken);
+                else
+                    _tokenResponse = await _authorizer.GetTokenAsync(GrantType.RefreshToken, _tokenResponse.RefreshToken, cancellationToken);
+
                 return _tokenResponse;
             }
             finally

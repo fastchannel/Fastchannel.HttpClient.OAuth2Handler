@@ -12,6 +12,15 @@ namespace Kaive.HttpClient.OAuth2Handler.Authorizer
 {
     public class Authorizer : IAuthorizer
     {
+        private const string CredentialsKey_GrantType = "grant_type";
+        private const string CredentialsKey_Username = "username";
+        private const string CredentialsKey_Password = "password";
+        private const string CredentialsKey_RefreshToken = "refresh_token";
+        private const string CredentialsKey_ClientId = "client_id";
+        private const string CredentialsKey_ClientSecret = "client_secret";
+        private const string CredentialsKey_Scope = "scope";
+        private const string CredentialsKey_Resource = "resource";
+
         private readonly AuthorizerOptions _options;
         private readonly Func<System.Net.Http.HttpClient> _httpClientFactory;
 
@@ -25,19 +34,57 @@ namespace Kaive.HttpClient.OAuth2Handler.Authorizer
         {
             _options = options ?? throw new ArgumentNullException(nameof(options));
             _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
+
+            SetDefaultCredentialsKeyNames();
         }
 
+        private void SetDefaultCredentialsKeyNames()
+        {
+            var defaultKeyNames = new Dictionary<string, string>
+            {
+                { CredentialsKey_GrantType, CredentialsKey_GrantType },
+                { CredentialsKey_Username, CredentialsKey_Username },
+                { CredentialsKey_Password, CredentialsKey_Password },
+                { CredentialsKey_ClientId, CredentialsKey_ClientId },
+                { CredentialsKey_ClientSecret, CredentialsKey_ClientSecret },
+                { CredentialsKey_Scope, CredentialsKey_Scope },
+                { CredentialsKey_Resource, CredentialsKey_Resource }
+            };
+
+            if (_options.CredentialsKeyNames == null || _options.CredentialsKeyNames.Keys.Count == 0)
+            {
+                _options.CredentialsKeyNames = defaultKeyNames;
+                return;
+            }
+
+            foreach(var keyName in defaultKeyNames.Keys)
+            {
+                if (_options.CredentialsKeyNames.ContainsKey(keyName))
+                    continue;
+
+                _options.CredentialsKeyNames.Add(keyName, defaultKeyNames[keyName]);
+            }
+        }
+
+        private string GetKeyName(string credentialKey) => _options.CredentialsKeyNames[credentialKey];
+
         public async Task<TokenResponse> GetTokenAsync(CancellationToken? cancellationToken = null)
+            => await GetTokenAsync(null, null, cancellationToken);
+
+        public async Task<TokenResponse> GetTokenAsync(GrantType? grantType, string refreshToken, CancellationToken? cancellationToken = null)
         {
             cancellationToken = cancellationToken ?? new CancellationToken(false);
-            switch (_options.GrantType)
+            var effectiveGrantType = grantType ?? _options.GrantType;
+            switch (effectiveGrantType)
             {
                 case GrantType.ClientCredentials:
                     return await GetTokenWithClientCredentials(cancellationToken.Value);
                 case GrantType.ResourceOwnerPasswordCredentials:
                     return await GetTokenWithResourceOwnerPasswordCredentials(cancellationToken.Value);
+                case GrantType.RefreshToken:
+                    return await GetTokenWithRefreshToken(refreshToken, cancellationToken.Value);
                 default:
-                    throw new NotSupportedException($"Requested grant type '{_options.GrantType}' is not supported.");
+                    throw new NotSupportedException($"Requested grant-type '{_options.GrantType}' is not supported.");
             }
         }
 
@@ -48,7 +95,7 @@ namespace Kaive.HttpClient.OAuth2Handler.Authorizer
 
             var properties = new Dictionary<string, string>
             {
-                { "grant_type", "client_credentials" }
+                { GetKeyName(CredentialsKey_GrantType), "client_credentials" }
             };
 
             return GetTokenAsync(properties, cancellationToken);
@@ -64,9 +111,26 @@ namespace Kaive.HttpClient.OAuth2Handler.Authorizer
 
             var properties = new Dictionary<string, string>
             {
-                { "grant_type", "password" },
-                { "username", _options.Username },
-                { "password", _options.Password }
+                { GetKeyName(CredentialsKey_GrantType), "password" },
+                { GetKeyName(CredentialsKey_Username), _options.Username },
+                { GetKeyName(CredentialsKey_Password), _options.Password }
+            };
+
+            return GetTokenAsync(properties, cancellationToken);
+        }
+
+        private Task<TokenResponse> GetTokenWithRefreshToken(string refreshToken, CancellationToken cancellationToken)
+        {
+            if (_options.TokenEndpointUri == null) throw new ArgumentException("TokenEndpointUrl option cannot be null.");
+            if (!_options.TokenEndpointUri.IsAbsoluteUri) throw new ArgumentException("TokenEndpointUrl must be an absolute Url.");
+
+            if (_options.Username == null) throw new ArgumentException("Username cannot be null.");
+            if (_options.Password == null) throw new ArgumentException("Password cannot be null.");
+
+            var properties = new Dictionary<string, string>
+            {
+                { GetKeyName(CredentialsKey_GrantType), "refresh_token" },
+                { GetKeyName(CredentialsKey_RefreshToken), refreshToken }
             };
 
             return GetTokenAsync(properties, cancellationToken);
@@ -78,25 +142,29 @@ namespace Kaive.HttpClient.OAuth2Handler.Authorizer
             {
                 if (_options.CredentialsTransportMethod == CredentialsTransportMethod.BasicAuthenticationCredentials)
                     client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", GetBasicAuthorizationHeaderValue());
-                else if (_options.CredentialsTransportMethod == CredentialsTransportMethod.FormAuthenticationCredentials)
+                else
                 {
-                    properties.Add("client_id", _options.ClientId);
-                    properties.Add("client_secret", _options.ClientSecret);
+                    properties.Add(GetKeyName(CredentialsKey_ClientId), _options.ClientId);
+                    properties.Add(GetKeyName(CredentialsKey_ClientSecret), _options.ClientSecret);
                 }
 
                 client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
                 if (_options.Scope != null)
-                    properties.Add("scope", string.Join(" ", _options.Scope));
+                    properties.Add(GetKeyName(CredentialsKey_Scope), string.Join(" ", _options.Scope));
 
                 if (_options.Resource != null)
-                    properties.Add("resource", _options.Resource);
+                    properties.Add(GetKeyName(CredentialsKey_Resource), _options.Resource);
 
                 var tokenUri = _options.TokenEndpointUri;
                 if (_options.SetGrantTypeOnQueryString)
-                    tokenUri = new UriBuilder(tokenUri) {Query = "grant_type=" + properties["grant_type"]}.Uri;
+                    tokenUri = new UriBuilder(tokenUri) {Query = $"{GetKeyName(CredentialsKey_GrantType)}={properties[GetKeyName(CredentialsKey_GrantType)]}"}.Uri;
 
-                var response = await client.PostAsync(tokenUri, new FormUrlEncodedContent(properties), cancellationToken);
+                var requestContent = _options.CredentialsTransportMethod != CredentialsTransportMethod.JsonAuthenticationCredentials
+                    ? (HttpContent) new FormUrlEncodedContent(properties)
+                    : CreateJsonRequestContent(properties);
+
+                var response = await client.PostAsync(tokenUri, requestContent, cancellationToken);
                 if (cancellationToken.IsCancellationRequested)
                     return null;
 
@@ -106,8 +174,60 @@ namespace Kaive.HttpClient.OAuth2Handler.Authorizer
                     return null;
                 }
 
-                var serializer = new DataContractJsonSerializer(typeof(TokenResponse));
-                return serializer.ReadObject(await response.Content.ReadAsStreamAsync()) as TokenResponse;
+                if (_options.AccessTokenResponseOptions == null)
+                {
+                    var serializer = new DataContractJsonSerializer(typeof(TokenResponse));
+                    return serializer.ReadObject(await response.Content.ReadAsStreamAsync()) as TokenResponse;
+                }
+                else
+                {
+                    var responseAsDictionary = _options.AccessTokenResponseOptions.TryDeserialize(await response.Content.ReadAsStringAsync());
+                    var responseKeyNames = _options.AccessTokenResponseOptions.KeyNames;
+                    if (!responseAsDictionary.ContainsKey(responseKeyNames.AccessToken))
+                        return null;
+
+                    try
+                    {
+                        var tokenResponse = new TokenResponse
+                        {
+                            AccessToken = responseAsDictionary[responseKeyNames.AccessToken]?.ToString(),
+                            TokenType = responseAsDictionary[responseKeyNames.TokenType]?.ToString(),
+                            ExpiresInSeconds = Convert.ToDouble(responseAsDictionary[responseKeyNames.ExpiresIn]),
+                            Scope = responseAsDictionary[responseKeyNames.Scope]?.ToString(),
+                            RefreshToken = responseAsDictionary[responseKeyNames.RefreshToken]?.ToString(),
+                            RefreshTokenExpiresInSeconds = Convert.ToDouble(responseAsDictionary[responseKeyNames.RefreshTokenExpiresIn]),
+                        };
+
+                        if (string.IsNullOrWhiteSpace(tokenResponse.AccessToken))
+                            return null;
+
+                        return tokenResponse;
+                    }
+                    catch
+                    {
+                        return null;
+                    }
+                }
+            }
+        }
+
+        private StringContent CreateJsonRequestContent(IDictionary<string, string> requestData)
+        {
+            using (var memStream = new System.IO.MemoryStream())
+            using (var streamReader = new System.IO.StreamReader(memStream))
+            {
+                var jsonSerializer = new DataContractJsonSerializer(typeof(IDictionary<string, string>),
+                    new DataContractJsonSerializerSettings()
+                    {
+                        UseSimpleDictionaryFormat = true
+                    });
+
+                jsonSerializer.WriteObject(memStream, requestData);
+
+                memStream.Position = 0;
+                var jsonString = streamReader.ReadToEnd();
+
+                return new StringContent(jsonString, Encoding.UTF8, "application/json");
             }
         }
 

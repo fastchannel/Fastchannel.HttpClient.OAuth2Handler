@@ -3,6 +3,7 @@
     public enum CredentialsTransportMethod
     {
         BasicAuthenticationCredentials,
-        FormAuthenticationCredentials
+        FormAuthenticationCredentials,
+        JsonAuthenticationCredentials
     }
 }

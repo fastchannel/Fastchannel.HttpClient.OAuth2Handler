@@ -4,5 +4,6 @@
     {
         ClientCredentials,
         ResourceOwnerPasswordCredentials,
+        RefreshToken
     }
 }
