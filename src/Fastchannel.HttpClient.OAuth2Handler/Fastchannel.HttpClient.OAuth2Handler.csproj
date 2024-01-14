@@ -21,10 +21,14 @@ and the "Kaive" namespace has been fully replaced by "Fastchannel" at version 2.
     <AssemblyVersion>1.0.6.0</AssemblyVersion>
     <PackageId>Fastchannel.HttpClient.OAuth2Handler</PackageId>
     <Product>Fastchannel.HttpClient.OAuth2Handler</Product>
-    <PackageReadmeFile>..\..\README.md</PackageReadmeFile>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <Copyright>© Fastchannel Corp. All rights reserved.</Copyright>
     <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
   </PropertyGroup>
+  
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
   
   <ItemGroup Condition="'$(TargetFramework)' == 'net452'">
     <Reference Include="System.Net.Http" />
