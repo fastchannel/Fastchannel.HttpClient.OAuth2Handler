@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Net;
 
-namespace Kaive.HttpClient.OAuth2Handler
+namespace Fastchannel.HttpClient.OAuth2Handler
 {
     public class OAuthException : Exception
     {

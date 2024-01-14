@@ -1,7 +1,7 @@
 ﻿using System.Net.Http;
-using Kaive.HttpClient.OAuth2Handler.Authorizer;
+using Fastchannel.HttpClient.OAuth2Handler.Authorizer;
 
-namespace Kaive.HttpClient.OAuth2Handler
+namespace Fastchannel.HttpClient.OAuth2Handler
 {
     public class OAuthHttpHandlerOptions
     {

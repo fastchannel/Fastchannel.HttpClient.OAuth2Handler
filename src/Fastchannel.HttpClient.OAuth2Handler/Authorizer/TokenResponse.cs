@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.Serialization;
 
-namespace Kaive.HttpClient.OAuth2Handler.Authorizer
+namespace Fastchannel.HttpClient.OAuth2Handler.Authorizer
 {
     [DataContract]
     public class TokenResponse

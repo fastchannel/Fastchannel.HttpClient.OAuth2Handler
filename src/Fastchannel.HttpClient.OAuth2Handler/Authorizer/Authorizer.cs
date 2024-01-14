@@ -8,10 +8,12 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Kaive.HttpClient.OAuth2Handler.Authorizer
+namespace Fastchannel.HttpClient.OAuth2Handler.Authorizer
 {
     public class Authorizer : IAuthorizer
     {
+        private const string ApplicationJson = "application/json";
+
         private const string CredentialsKey_GrantType = "grant_type";
         private const string CredentialsKey_Username = "username";
         private const string CredentialsKey_Password = "password";
@@ -57,7 +59,7 @@ namespace Kaive.HttpClient.OAuth2Handler.Authorizer
                 return;
             }
 
-            foreach(var keyName in defaultKeyNames.Keys)
+            foreach (var keyName in defaultKeyNames.Keys)
             {
                 if (_options.CredentialsKeyNames.ContainsKey(keyName))
                     continue;
@@ -93,12 +95,21 @@ namespace Kaive.HttpClient.OAuth2Handler.Authorizer
             if (_options.TokenEndpointUri == null) throw new ArgumentException("TokenEndpointUrl option cannot be null.");
             if (!_options.TokenEndpointUri.IsAbsoluteUri) throw new ArgumentException("TokenEndpointUrl must be an absolute Url.");
 
+            if (_options.ClientId == null) throw new ArgumentException("ClientId cannot be null.");
+            if (_options.ClientSecret == null) throw new ArgumentException("ClientSecret cannot be null.");
+
             var properties = new Dictionary<string, string>
             {
                 { GetKeyName(CredentialsKey_GrantType), "client_credentials" }
             };
 
-            return GetTokenAsync(properties, cancellationToken);
+            if (!string.IsNullOrWhiteSpace(_options.Username))
+                properties.Add(GetKeyName(CredentialsKey_Username), _options.Username);
+
+            if (!string.IsNullOrWhiteSpace(_options.Password))
+                properties.Add(GetKeyName(CredentialsKey_Password), _options.Password);
+
+            return GetTokenAsync(GrantType.ClientCredentials, properties, cancellationToken);
         }
 
         private Task<TokenResponse> GetTokenWithResourceOwnerPasswordCredentials(CancellationToken cancellationToken)
@@ -111,12 +122,16 @@ namespace Kaive.HttpClient.OAuth2Handler.Authorizer
 
             var properties = new Dictionary<string, string>
             {
-                { GetKeyName(CredentialsKey_GrantType), "password" },
-                { GetKeyName(CredentialsKey_Username), _options.Username },
-                { GetKeyName(CredentialsKey_Password), _options.Password }
+                { GetKeyName(CredentialsKey_GrantType), "password" }
             };
 
-            return GetTokenAsync(properties, cancellationToken);
+            if (!string.IsNullOrWhiteSpace(_options.ClientId))
+                properties.Add(GetKeyName(CredentialsKey_ClientId), _options.ClientId);
+
+            if (!string.IsNullOrWhiteSpace(_options.ClientSecret))
+                properties.Add(GetKeyName(CredentialsKey_ClientSecret), _options.ClientSecret);
+
+            return GetTokenAsync(GrantType.ResourceOwnerPasswordCredentials, properties, cancellationToken);
         }
 
         private Task<TokenResponse> GetTokenWithRefreshToken(string refreshToken, CancellationToken cancellationToken)
@@ -124,8 +139,7 @@ namespace Kaive.HttpClient.OAuth2Handler.Authorizer
             if (_options.TokenEndpointUri == null) throw new ArgumentException("TokenEndpointUrl option cannot be null.");
             if (!_options.TokenEndpointUri.IsAbsoluteUri) throw new ArgumentException("TokenEndpointUrl must be an absolute Url.");
 
-            if (_options.Username == null) throw new ArgumentException("Username cannot be null.");
-            if (_options.Password == null) throw new ArgumentException("Password cannot be null.");
+            if (string.IsNullOrWhiteSpace(refreshToken)) throw new ArgumentNullException(nameof(refreshToken));
 
             var properties = new Dictionary<string, string>
             {
@@ -133,22 +147,49 @@ namespace Kaive.HttpClient.OAuth2Handler.Authorizer
                 { GetKeyName(CredentialsKey_RefreshToken), refreshToken }
             };
 
-            return GetTokenAsync(properties, cancellationToken);
+            return GetTokenAsync(GrantType.RefreshToken, properties, cancellationToken);
         }
 
-        private async Task<TokenResponse> GetTokenAsync(IDictionary<string, string> properties, CancellationToken cancellationToken)
+        private async Task<TokenResponse> GetTokenAsync(GrantType grantType, IDictionary<string, string> properties, CancellationToken cancellationToken)
         {
             using (var client = _httpClientFactory())
             {
-                if (_options.CredentialsTransportMethod == CredentialsTransportMethod.BasicAuthenticationCredentials)
-                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", GetBasicAuthorizationHeaderValue());
-                else
+                switch (_options.CredentialsTransportMethod)
                 {
-                    properties.Add(GetKeyName(CredentialsKey_ClientId), _options.ClientId);
-                    properties.Add(GetKeyName(CredentialsKey_ClientSecret), _options.ClientSecret);
+                    case CredentialsTransportMethod.BasicAuthenticationHeader:
+                        var credentialsLeftSide = grantType == GrantType.ResourceOwnerPasswordCredentials
+                            ? _options.Username
+                            : _options.ClientId;
+
+                        var credentialsRightSide = grantType == GrantType.ResourceOwnerPasswordCredentials
+                            ? _options.Password
+                            : _options.ClientSecret;
+
+                        var basicAuthenticationHeaderValue = Convert.ToBase64String(
+                            Encoding.UTF8.GetBytes($"{credentialsLeftSide}:{credentialsRightSide}"));
+
+                        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", basicAuthenticationHeaderValue);
+                        break;
+
+                    case CredentialsTransportMethod.FormRequestBody:
+                        if (grantType == GrantType.ClientCredentials)
+                        {
+                            properties.Add(GetKeyName(CredentialsKey_ClientId), _options.ClientId);
+                            properties.Add(GetKeyName(CredentialsKey_ClientSecret), _options.ClientSecret);
+                        }
+                        else if (grantType == GrantType.ResourceOwnerPasswordCredentials)
+                        {
+                            properties.Add(GetKeyName(CredentialsKey_Username), _options.Username);
+                            properties.Add(GetKeyName(CredentialsKey_Password), _options.Password);
+                        }
+                        break;
+
+                    default:
+                        throw new ArgumentOutOfRangeException($"Current value for '${nameof(AuthorizerOptions.CredentialsTransportMethod)}' is not valid.");
                 }
 
-                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                // We will always "Accept" responses in "application/json" format, regardless of the request content-type.
+                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue(ApplicationJson));
 
                 if (_options.Scope != null)
                     properties.Add(GetKeyName(CredentialsKey_Scope), string.Join(" ", _options.Scope));
@@ -158,11 +199,20 @@ namespace Kaive.HttpClient.OAuth2Handler.Authorizer
 
                 var tokenUri = _options.TokenEndpointUri;
                 if (_options.SetGrantTypeOnQueryString)
-                    tokenUri = new UriBuilder(tokenUri) {Query = $"{GetKeyName(CredentialsKey_GrantType)}={properties[GetKeyName(CredentialsKey_GrantType)]}"}.Uri;
+                    tokenUri = new UriBuilder(tokenUri) { Query = $"{GetKeyName(CredentialsKey_GrantType)}={properties[GetKeyName(CredentialsKey_GrantType)]}" }.Uri;
 
-                var requestContent = _options.CredentialsTransportMethod != CredentialsTransportMethod.JsonAuthenticationCredentials
-                    ? (HttpContent) new FormUrlEncodedContent(properties)
-                    : CreateJsonRequestContent(properties);
+                HttpContent requestContent;
+                switch (_options.TokenRequestContentType)
+                {
+                    case TokenRequestContentType.FormUrlEncoded:
+                        requestContent = new FormUrlEncodedContent(properties);
+                        break;
+                    case TokenRequestContentType.ApplicationJson:
+                        requestContent = CreateJsonRequestContent(properties);
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException($"Current value for '${nameof(AuthorizerOptions.TokenRequestContentType)}' is not valid.");
+                }
 
                 var response = await client.PostAsync(tokenUri, requestContent, cancellationToken);
                 if (cancellationToken.IsCancellationRequested)
@@ -227,15 +277,8 @@ namespace Kaive.HttpClient.OAuth2Handler.Authorizer
                 memStream.Position = 0;
                 var jsonString = streamReader.ReadToEnd();
 
-                return new StringContent(jsonString, Encoding.UTF8, "application/json");
+                return new StringContent(jsonString, Encoding.UTF8, ApplicationJson);
             }
-        }
-
-        private string GetBasicAuthorizationHeaderValue()
-        {
-            if (_options.ClientId == null) throw new ArgumentException("ClientId cannot be null.");
-            if (_options.ClientSecret == null) throw new ArgumentException("ClientSecret cannot be null.");
-            return Convert.ToBase64String(Encoding.UTF8.GetBytes($"{_options.ClientId}:{_options.ClientSecret}"));
         }
 
         private void RaiseProtocolException(HttpStatusCode statusCode, string message)

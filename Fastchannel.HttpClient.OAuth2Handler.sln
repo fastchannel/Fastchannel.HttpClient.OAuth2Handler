@@ -1,9 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.28010.2003
+# Visual Studio Version 17
+VisualStudioVersion = 17.8.34408.163
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kaive.HttpClient.OAuth2Handler", "src\Kaive.HttpClient.OAuth2Handler\Kaive.HttpClient.OAuth2Handler.csproj", "{0625DC02-DE9E-40FF-9D92-9C9F8B344EDC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Fastchannel.HttpClient.OAuth2Handler", "src\Fastchannel.HttpClient.OAuth2Handler\Fastchannel.HttpClient.OAuth2Handler.csproj", "{0625DC02-DE9E-40FF-9D92-9C9F8B344EDC}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{C24B57E3-E01F-4109-A217-1773B633F907}"
 EndProject
@@ -11,7 +11,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	ProjectSection(SolutionItems) = preProject
 		.appveyor.yaml = .appveyor.yaml
 		.gitignore = .gitignore
-		fastchannel.png = fastchannel.png
+		icon.png = icon.png
 		LICENSE = LICENSE
 		README.md = README.md
 	EndProjectSection

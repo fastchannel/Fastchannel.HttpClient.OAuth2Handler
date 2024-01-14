@@ -1,4 +1,4 @@
-﻿namespace Kaive.HttpClient.OAuth2Handler
+﻿namespace Fastchannel.HttpClient.OAuth2Handler
 {
     public enum GrantType
     {

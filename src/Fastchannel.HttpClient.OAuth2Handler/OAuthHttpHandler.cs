@@ -4,9 +4,9 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
-using Kaive.HttpClient.OAuth2Handler.Authorizer;
+using Fastchannel.HttpClient.OAuth2Handler.Authorizer;
 
-namespace Kaive.HttpClient.OAuth2Handler
+namespace Fastchannel.HttpClient.OAuth2Handler
 {
     // ReSharper disable once UnusedMember.Global
     public class OAuthHttpHandler : DelegatingHandler
@@ -76,7 +76,7 @@ namespace Kaive.HttpClient.OAuth2Handler
 
             return response;
         }
-        
+
         protected virtual void SetRequestHeaders(HttpRequestMessage request, string accessToken)
         {
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);

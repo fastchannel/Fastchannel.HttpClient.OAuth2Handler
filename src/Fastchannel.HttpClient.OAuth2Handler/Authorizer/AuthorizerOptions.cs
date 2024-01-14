@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 
-namespace Kaive.HttpClient.OAuth2Handler.Authorizer
+namespace Fastchannel.HttpClient.OAuth2Handler.Authorizer
 {
     public class AuthorizerOptions
     {
@@ -27,6 +27,8 @@ namespace Kaive.HttpClient.OAuth2Handler.Authorizer
 
         public CredentialsTransportMethod CredentialsTransportMethod { get; set; }
 
+        public TokenRequestContentType TokenRequestContentType { get; set; }
+
         public Dictionary<string, string> CredentialsKeyNames { get; set; }
 
         public AccessTokenResponseOptions AccessTokenResponseOptions { get; set; }
@@ -37,7 +39,9 @@ namespace Kaive.HttpClient.OAuth2Handler.Authorizer
 
         public AuthorizerOptions()
         {
-            CredentialsTransportMethod = CredentialsTransportMethod.BasicAuthenticationCredentials;
+            GrantType = GrantType.ClientCredentials;
+            CredentialsTransportMethod = CredentialsTransportMethod.BasicAuthenticationHeader;
+            TokenRequestContentType = TokenRequestContentType.FormUrlEncoded;
         }
     }
 
