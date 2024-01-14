@@ -7,10 +7,10 @@
   <PropertyGroup>
     <Authors>fastchannel.com</Authors>
     <Description>Provides a generic OAuth2 handler to be used within System.Net.Http.HttpClient instances, enabling OAuth2 authorization for any requests made through the aforementionet HTTP client. Inspired on: https://github.com/huysentruitw/oauth2-client-handler</Description>
-    <PackageLicenseUrl>https://raw.githubusercontent.com/fastchannel/kaive-httpclient-oauth-handler/master/LICENSE</PackageLicenseUrl>
+    <PackageLicenseUrl>https://raw.githubusercontent.com/fastchannel/httpclient-oauth2handler/master/LICENSE</PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/fastchannel/httpclient-oauth2handler</PackageProjectUrl>
     <RepositoryUrl>https://github.com/fastchannel/httpclient-oauth2handler</RepositoryUrl>
-    <PackageIconUrl>https://raw.githubusercontent.com/fastchannel/kaive-httpclient-oauth-handler/master/fastchannel.png</PackageIconUrl>
+    <PackageIconUrl>https://raw.githubusercontent.com/fastchannel/httpclient-oauth2handler/master/icon.png</PackageIconUrl>
     <RepositoryType>GitHub</RepositoryType>
     <PackageTags>Fastchannel;HttpClient;HttpHandler;OAuth2</PackageTags>
     <PackageReleaseNotes>Initial rush release, still missing unit tests and documentation.
@@ -21,10 +21,8 @@ and the "Kaive" namespace has been fully replaced by "Fastchannel" at version 2.
     <AssemblyVersion>1.0.6.0</AssemblyVersion>
     <PackageId>Fastchannel.HttpClient.OAuth2Handler</PackageId>
     <Product>Fastchannel.HttpClient.OAuth2Handler</Product>
-    <PackageIcon>icon.png</PackageIcon>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <Copyright>© Fastchannel Corp. All rights reserved.</Copyright>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
   </PropertyGroup>
   
