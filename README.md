@@ -1,6 +1,6 @@
 # OAuth2 HttpClient Handler, by Fastchannel
 
-![Build status](https://img.shields.io/appveyor/build/fastchannel/httpclient-oauth2handler?style=plastic)
+![Build status](https://img.shields.io/appveyor/build/fastchannel/fastchannel-httpclient-oauth2handler?style=plastic)
 
 ![Install from nuget](https://img.shields.io/nuget/v/Fastchannel.HttpClient.OAuth2Handler?style=plastic)
 
