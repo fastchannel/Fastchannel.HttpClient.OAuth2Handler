@@ -165,6 +165,18 @@ namespace Fastchannel.HttpClient.OAuth2Handler.Authorizer
                             ? _options.Password
                             : _options.ClientSecret;
 
+                        switch (_options.BasicAuthenticationEncodingMethod)
+                        {
+                            case BasicAuthenticationEncodingMethod.Plain:
+                                break;
+                            case BasicAuthenticationEncodingMethod.UrlEncoded:
+                                credentialsLeftSide = WebUtility.UrlEncode(credentialsLeftSide);
+                                credentialsRightSide = WebUtility.UrlEncode(credentialsRightSide);
+                                break;
+                            default:
+                                throw new ArgumentOutOfRangeException($"Current value for '{nameof(AuthorizerOptions.BasicAuthenticationEncodingMethod)}' is not valid.");
+                        }
+
                         var basicAuthenticationHeaderValue = Convert.ToBase64String(
                             Encoding.UTF8.GetBytes($"{credentialsLeftSide}:{credentialsRightSide}"));
 

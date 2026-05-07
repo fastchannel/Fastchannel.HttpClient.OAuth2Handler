@@ -36,12 +36,15 @@ namespace Fastchannel.HttpClient.OAuth2Handler.Authorizer
         public Action<HttpStatusCode, string> OnError { get; set; }
 
         public Action<HttpRequestMessage, string> OnTokenRefresh { get; set; }
+        
+        public BasicAuthenticationEncodingMethod BasicAuthenticationEncodingMethod { get; set; }
 
         public AuthorizerOptions()
         {
             GrantType = GrantType.ClientCredentials;
             CredentialsTransportMethod = CredentialsTransportMethod.BasicAuthenticationHeader;
             TokenRequestContentType = TokenRequestContentType.FormUrlEncoded;
+            BasicAuthenticationEncodingMethod = BasicAuthenticationEncodingMethod.Plain;
         }
     }
 
